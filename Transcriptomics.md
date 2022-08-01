@@ -69,6 +69,7 @@ data.hg38 <- GDCprepare(query_met.hg38)
 
 # Methylation Data Preparation
 
+# mRNA Pre-processing ##  
 ## Data pre-processing and normalization ##
 data <- read.csv("mRNA.csv", header  = TRUE, sep = ",", row.names = 1)
 head(data, 5)
@@ -78,12 +79,34 @@ dim(data)
 data <- data %>% drop_na()
 
 ## Removing Rows containing zeros
+
 data <- data[apply(data, 1, function(row) all(row !=0 )), ]
+write.csv(data, "mRNA_without_NA_Zero.csv")
 
+## Converting to Gene Symbol ##
 
+library('biomaRt')
+mart <- useDataset("hsapiens_gene_ensembl", useMart("ensembl"))
+df <- read.csv("mRNA_without_NA_Zero.csv")
+head(df)
+genes <- df$ensembl_gene_id
+G_list <- getBM(filters= "ensembl_gene_id", attributes= c("ensembl_gene_id","hgnc_symbol"), values=genes, mart= mart)
+G_list
+A <- merge(df, G_list, by = "ensembl_gene_id")
+write.csv(A, "mRNA_withsymbol.csv")
 
+# miRNA Pre-processing ##  
+## Data pre-processing and normalization ##
+data <- read.csv("miRNA.csv", header  = TRUE, sep = ",", row.names = 1)
+head(data, 5)
+dim(data)
 
+## Removing Rows containing NA
+data <- data %>% drop_na()
 
+## Removing Rows containing all zeros ##
+data <- data[rowSums(data[])>0,]
+write.csv(data, "mRNA_without_NA_Zero.csv")
 
 
 
