@@ -68,11 +68,51 @@ GDCdownload(query_met.hg38)
 data.hg38 <- GDCprepare(query_met.hg38)
 
 # Methylation Data Preparation
+
 data.hg38
 data.hg38 %>% rowRanges %>% as.data.frame %>% head
 data.hg38 %>% colData %>% as.data.frame
 data.hg38 %>% assay %>% head %>% as.data.frame
 data.hg38 %>% rowData %>% as.data.frame %>% head
+
+#Saving the Object
+saveRDS(object = data.hg38,
+        file = "data.hg38.RDS",
+        compress = FALSE)
+
+# loading saved session: Once you saved your data, you can load it into your environment: 
+data.met = readRDS(file = "data.hg38.RDS")
+# Making assay Matrix
+met <- as.data.frame(assay(data.hg38))
+# Making Clincal Matrix
+clinical <- data.frame(data.hg38@colData)
+# get the 450k annotation data
+ann450k <- getAnnotation(IlluminaHumanMethylation450kanno.ilmn12.hg19)
+## remove probes with NA
+probe.na <- rowSums(is.na(met))
+table(probe.na == 0)
+# chose those has not NA values in rows
+probe <- probe.na[probe.na == 0]
+met <- met[row.names(met) %in% names(probe), ]
+
+## remove probes that match to chromosome  X and Y 
+clin <- subset(clinical,subset = !as.character(rownames(clinical)) %in% c("chrNA","chrX","chrY"))
+Extract <- rownames(clin)
+
+#####################################
+## If clinical data rownmaes is duplicate ##
+clin <- read.csv("Methyl_rowRanges.csv", sep = ",")
+rownames(clin) <- NULL
+rownames(clin) <- make.names(clin$X, unique = TRUE)
+################################
+
+head(Extract)
+Methyl_without_X_Y <- met[Extract,] %>% data.frame()
+dim(Methyl_without_X_Y)
+
+##drop NA##
+Methyl_without_X_Y <- Methyl_without_X_Y %>% drop_na()
+write.csv(Methyl_without_X_Y, "Methyl_without_X_Y.csv")
 
 
 # mRNA Pre-processing ##  
@@ -113,6 +153,8 @@ data <- data %>% drop_na()
 ## Removing Rows containing all zeros ##
 data <- data[rowSums(data[])>0,]
 write.csv(data, "mRNA_without_NA_Zero.csv")
+
+### Integration of the Omics based on Patient Data ##
 
 
 
