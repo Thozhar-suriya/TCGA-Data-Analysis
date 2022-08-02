@@ -68,6 +68,12 @@ GDCdownload(query_met.hg38)
 data.hg38 <- GDCprepare(query_met.hg38)
 
 # Methylation Data Preparation
+data.hg38
+data.hg38 %>% rowRanges %>% as.data.frame %>% head
+data.hg38 %>% colData %>% as.data.frame
+data.hg38 %>% assay %>% head %>% as.data.frame
+data.hg38 %>% rowData %>% as.data.frame %>% head
+
 
 # mRNA Pre-processing ##  
 ## Data pre-processing and normalization ##
