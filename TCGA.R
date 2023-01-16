@@ -5,15 +5,21 @@
 ## Installation of BioCmanager and TCGAbiolinks ##
 if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
-
+    
 BiocManager::install("TCGAbiolinks")
 
-### Importing Libraries ### 
+## Updated Version ##
+BiocManager::install("BioinformaticsFMRP/TCGAbiolinksGUI.data")
+BiocManager::install("BioinformaticsFMRP/TCGAbiolinks")
 
+##if not use devtools or remotes##
+
+### Importing Libraries ### 
 library(TCGAbiolinks)
 library(dplyr)
 library(DT)
 library(SummarizedExperiment)
+library(tidyr)
 
 ## Project ##
 ## TCGA-STAD ##
@@ -64,11 +70,17 @@ query_met.hg38 <- GDCquery(
     data.type = "Methylation Beta Value",
     platform = "Illumina Human Methylation 450", 
 )
-GDCdownload(query_met.hg38)
-data.hg38 <- GDCprepare(query_met.hg38)
+GDCdownload(query_met.hg38, 
+                method = "api",
+                directory = "./TCGA")
+        
+                       
+ data.hg38 <- GDCprepare(query_met.hg38, 
+                                save = FALSE, 
+                                    summarizedExperiment = TRUE, 
+                                                directory = "./TCGA",)
 
 # Methylation Data Preparation
-
 data.hg38
 data.hg38 %>% rowRanges %>% as.data.frame %>% head
 data.hg38 %>% colData %>% as.data.frame
@@ -82,22 +94,23 @@ saveRDS(object = data.hg38,
 
 # loading saved session: Once you saved your data, you can load it into your environment: 
 data.met = readRDS(file = "data.hg38.RDS")
+
 # Making assay Matrix
 met <- as.data.frame(assay(data.hg38))
+
 # Making Clincal Matrix
 clinical <- data.frame(data.hg38@colData)
+
 # get the 450k annotation data
 ann450k <- getAnnotation(IlluminaHumanMethylation450kanno.ilmn12.hg19)
+
 ## remove probes with NA
 probe.na <- rowSums(is.na(met))
 table(probe.na == 0)
+
 # chose those has not NA values in rows
 probe <- probe.na[probe.na == 0]
 met <- met[row.names(met) %in% names(probe), ]
-
-## remove probes that match to chromosome  X and Y 
-clin <- subset(clinical,subset = !as.character(rownames(clinical)) %in% c("chrNA","chrX","chrY"))
-Extract <- rownames(clin)
 
 #####################################
 ## If clinical data rownmaes is duplicate ##
@@ -105,6 +118,10 @@ clin <- read.csv("Methyl_rowRanges.csv", sep = ",")
 rownames(clin) <- NULL
 rownames(clin) <- make.names(clin$X, unique = TRUE)
 ################################
+
+## remove probes that match to chromosome  X and Y 
+clin <- subset(clinical,subset = !as.character(seqnqmes(clinical)) %in% c("chrM","chrX","chrY", "*"))
+Extract <- rownames(clin)
 
 head(Extract)
 Methyl_without_X_Y <- met[Extract,] %>% data.frame()
